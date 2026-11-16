@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>指摘レポート</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-3: #6d6b66;
+  --line: #e1e0d9;
+  --line-2: #c3c2b7;
+  --accent: #2a78d6;
+  --accent-wash: #e4effc;
+  --mark-wash: #fdf1d3;
+  --mark-edge: #c98500;
+  --cat-error: #2a78d6;
+  --cat-conflict: #eb6834;
+  --cat-undefined: #1baf7a;
+  --bad: #c22f2f;
+  --warn: #8a5a00;
+  --good: #006300;
+  --neutral-bar: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #262624;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #a3a198;
+    --line: #2c2c2a;
+    --line-2: #383835;
+    --accent: #3987e5;
+    --accent-wash: #1b2c42;
+    --mark-wash: #3a2f12;
+    --mark-edge: #c98500;
+    --cat-error: #3987e5;
+    --cat-conflict: #d95926;
+    --cat-undefined: #199e70;
+    --bad: #e66767;
+    --warn: #e0a93a;
+    --good: #0ca30c;
+    --neutral-bar: #898781;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #262624;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --ink-3: #a3a198;
+  --line: #2c2c2a;
+  --line-2: #383835;
+  --accent: #3987e5;
+  --accent-wash: #1b2c42;
+  --mark-wash: #3a2f12;
+  --mark-edge: #c98500;
+  --cat-error: #3987e5;
+  --cat-conflict: #d95926;
+  --cat-undefined: #199e70;
+  --bad: #e66767;
+  --warn: #e0a93a;
+  --good: #0ca30c;
+  --neutral-bar: #898781;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.65 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+}
+button, select, textarea, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 20px 24px 48px; }
+header.top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+header.top h1 { font-size: 20px; font-weight: 700; }
+header.top .file { color: var(--ink-3); font-size: 13px; overflow-wrap: anywhere; }
+header.top .spacer { flex: 1; }
+.btn {
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px;
+  padding: 6px 12px; font-size: 13px; min-height: 34px;
+}
+.btn:hover { background: var(--surface-2); }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+
+/* 読み込み */
+.drop {
+  display: grid; place-items: center; text-align: center; gap: 12px;
+  min-height: 60vh; padding: 32px 16px; border: 2px dashed var(--line-2); border-radius: 12px;
+  background: var(--surface);
+}
+.drop.over { border-color: var(--accent); background: var(--accent-wash); }
+.drop h2 { font-size: 20px; }
+.drop code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+.drop .inner { display: grid; gap: 14px; justify-items: center; }
+.drop .hint { color: var(--ink-2); font-size: 14px; max-width: 34em; }
+.error-box { color: var(--bad); font-weight: 600; }
+
+/* 概要 */
+.summary { display: grid; grid-template-columns: minmax(130px, auto) repeat(3, minmax(0, 1fr)) minmax(230px, 1.1fr); margin-bottom: 16px; }
+.summary > section { padding: 14px 16px; border-left: 1px solid var(--line); min-width: 0; }
+.summary > section:first-child { border-left: 0; }
+.summary h2 { font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 6px; }
+.total { font-size: 40px; font-weight: 700; line-height: 1.15; }
+.total-unit { font-size: 15px; font-weight: 500; margin-left: 2px; color: var(--ink-2); }
+.bar-row {
+  display: grid; grid-template-columns: minmax(70px, 9.5em) minmax(20px, 1fr) 2.2em; align-items: center; gap: 8px;
+  width: 100%; background: none; border: 0; border-radius: 4px; padding: 3px 4px; margin: 0 -4px; text-align: left; font-size: 13px;
+}
+.bar-row:hover { background: var(--surface-2); }
+.bar-row[aria-pressed="true"] { background: var(--accent-wash); font-weight: 600; }
+.bar-track { height: 8px; }
+.bar-fill { height: 8px; border-radius: 0 4px 4px 0; background: var(--neutral-bar); }
+.bar-count { text-align: right; font-variant-numeric: tabular-nums; }
+.bar-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check-state { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; }
+.check-state.ok { color: var(--good); }
+.check-state.warn { color: var(--warn); }
+.check-state.bad { color: var(--bad); }
+.check-note { color: var(--ink-3); font-size: 12px; margin-top: 4px; line-height: 1.5; }
+.check-list { margin: 6px 0 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); max-height: 112px; overflow: auto; }
+
+/* 選んだ3件 */
+.picked { padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 12px 16px; align-items: center; flex-wrap: wrap; }
+.picked strong { font-size: 14px; }
+.picked .chips { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 200px; }
+.chip { background: var(--accent-wash); border: 0; border-radius: 6px; padding: 4px 10px; font-size: 13px; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-note { color: var(--ink-3); font-size: 13px; }
+
+/* 絞り込み */
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; margin-bottom: 12px; }
+.filters label { display: grid; gap: 2px; font-size: 12px; color: var(--ink-3); }
+.filters select, .filters input[type="search"] {
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 8px; font-size: 13px; color: var(--ink); min-height: 34px;
+}
+.filters .count { margin-left: auto; font-size: 13px; color: var(--ink-2); align-self: center; }
+
+/* 一覧と詳細 */
+.layout { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.list { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-height: calc(100vh - 32px); overflow-y: auto; position: sticky; top: 16px; }
+.item { display: block; width: 100%; text-align: left; background: var(--surface); border: 0; padding: 10px 12px; border-left: 3px solid transparent; }
+.item:hover { background: var(--surface-2); }
+.item[aria-current="true"] { background: var(--accent-wash); border-left-color: var(--accent); }
+.item .meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; color: var(--ink-2); margin-bottom: 2px; }
+.item .title { font-size: 14px; line-height: 1.45; display: block; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+.dot.誤り { background: var(--cat-error); }
+.dot.矛盾 { background: var(--cat-conflict); }
+.dot.未定義 { background: var(--cat-undefined); }
+.sev { font-weight: 700; }
+.sev.高 { color: var(--bad); }
+.tag-pick { color: var(--accent); font-weight: 700; }
+.tag-issue { color: var(--bad); font-weight: 700; }
+.verdict-mark { color: var(--ink-2); }
+
+.detail { padding: 20px 24px; min-width: 0; }
+.detail .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+.detail h2.title { font-size: 19px; line-height: 1.4; margin-bottom: 14px; }
+.detail h3 { font-size: 12px; font-weight: 600; color: var(--ink-3); margin: 16px 0 4px; }
+.detail .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.issue-box { border-left: 3px solid var(--bad); padding: 6px 12px; background: var(--surface-2); font-size: 13px; margin-bottom: 12px; }
+.issue-box.w { border-left-color: var(--warn); }
+.issue-box ul { margin: 0; padding-left: 16px; }
+.external-none { color: var(--ink-3); }
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; margin-top: 18px; padding-top: 2px; border-top: 1px solid var(--line); }
+.pane { min-width: 0; }
+.ref-name { font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink-2); margin: 8px 0 4px; overflow-wrap: anywhere; }
+.req-text { background: var(--surface-2); border-radius: 6px; padding: 10px 12px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 8px; max-height: 340px; overflow-y: auto; }
+.code { background: var(--surface-2); border-radius: 6px; padding: 6px 0; overflow-x: auto; font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, "Hiragino Sans", monospace; margin-bottom: 4px; }
+.code table { border-collapse: collapse; min-width: 100%; }
+.code td { padding: 0 10px; white-space: pre; }
+.code td.n { color: var(--ink-3); text-align: right; user-select: none; width: 1%; font-variant-numeric: tabular-nums; }
+.code tr.hit td { background: var(--mark-wash); }
+.code tr.hit td.n { box-shadow: inset 3px 0 0 var(--mark-edge); color: var(--ink); font-weight: 700; }
+.code tr.gap td { color: var(--ink-3); text-align: left; }
+.ref-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.vscode-link { font-size: 12px; color: var(--accent); white-space: nowrap; }
+.link-btn { background: none; border: 0; padding: 2px 0; color: var(--accent); font-size: 12px; text-decoration: underline; }
+.review { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.review h3 { margin: 0; font-size: 14px; color: var(--ink); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg label { border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.seg label:has(input:checked) { background: var(--accent-wash); border-color: var(--accent); font-weight: 600; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.review textarea { width: 100%; min-height: 64px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; font-size: 14px; color: var(--ink); }
+.review .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.none { padding: 24px; color: var(--ink-3); text-align: center; background: var(--surface); }
+footer.note { margin-top: 24px; font-size: 12px; color: var(--ink-3); }
+
+@media (max-width: 1180px) {
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary > section { border-left: 0; border-top: 1px solid var(--line); }
+  .summary > section:first-child { border-top: 0; grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .list { position: static; max-height: 46vh; }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .wrap { padding: 16px 16px 40px; }
+  .summary { grid-template-columns: minmax(0, 1fr); }
+  .detail { padding: 16px; }
+  .filters label, .filters select, .filters input[type="search"] { width: 100%; }
+  .filters .count { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="check.js"></script>
+<script src="sources.js"></script>
+<script>
+"use strict";
+(function () {
+  const app = document.getElementById("app");
+  const SOURCES = window.REPORT_SOURCES || {};
+  const { ENUMS, REQUIREMENTS_PATH, parseSections, parseRequirementRef, parseCodeRef, checkFindings } = window.FindingsCheck;
+  const SECTIONS = parseSections(SOURCES[REQUIREMENTS_PATH] || "");
+  const VERDICTS = ["未確認", "正しい", "誤検出", "判断できない"];
+  const SEV_RANK = { "高": 0, "中": 1, "低": 2 };
+  const MAX_PICK = 3;
+  const CONTEXT = 3;
+  const STORE_LAST = "findings-report-last";
+
+  // file:// で開いたとき、<リポジトリ>/report/index.html の位置からリポジトリの場所を求め、
+  // VS Code で該当行を開くリンクを作る。macOS は /Users/…、Windows は /C:/… になる。
+  const REPO_ROOT = (function () {
+    if (location.protocol !== "file:") return null;
+    const dir = location.pathname.replace(/[^/]*$/, "");
+    return /\/report\/$/.test(dir) ? dir.replace(/report\/$/, "") : null;
+  })();
+  // 公開リポジトリ。行番号がずれないよう、参照先は start タグに固定する。空にするとリンクを出さない。
+  const GITHUB_REPO = "takuyakubo/dev-automation-workshop";
+  const GITHUB_REF = "start";
+  function githubLink(path, from, to) {
+    if (!GITHUB_REPO) return null;
+    const plain = /\.md$/.test(path) ? "?plain=1" : "";
+    const range = from ? "#L" + from + (to && to !== from ? "-L" + to : "") : "";
+    return h("a", { class: "vscode-link", href: "https://github.com/" + GITHUB_REPO + "/blob/" + GITHUB_REF + "/" + path + plain + range,
+      target: "_blank", rel: "noopener", title: "GitHub で " + path + " を開く" }, "GitHub で開く ↗");
+  }
+  function vscodeLink(path, line) {
+    if (!REPO_ROOT) return null;
+    return h("a", { class: "vscode-link", href: "vscode://file" + REPO_ROOT + path + (line ? ":" + line : ""),
+      title: "VS Code で " + path + (line ? " の " + line + " 行目" : "") + " を開く" }, "VS Code で開く ↗");
+  }
+
+  const state = {
+    fileName: "", raw: "", findings: [], result: null, review: {},
+    selected: null, filters: { classification: "", area: "", severity: "", verdict: "", q: "", pickedOnly: false },
+    fullFiles: {},
+  };
+
+  // データはすべて textContent で入れる。JSONの内容をHTMLとして解釈しない。
+  function h(tag, props, ...children) {
+    const el = document.createElement(tag);
+    Object.entries(props || {}).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === false) return;
+      if (k === "class") el.className = v;
+      else if (k === "on") Object.entries(v).forEach(([ev, fn]) => el.addEventListener(ev, fn));
+      else if (k in el && k !== "list") el[k] = v;
+      else el.setAttribute(k, v === true ? "" : v);
+    });
+    children.flat(Infinity).forEach((c) => {
+      if (c === null || c === undefined || c === false) return;
+      el.append(c.nodeType ? c : String(c));
+    });
+    return el;
+  }
+
+  // 保存はこのブラウザの中だけ。使えない環境でも動くようにする。
+  const store = {
+    get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+    set(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* 保存しないまま続ける */ } },
+    del(key) { try { localStorage.removeItem(key); } catch (e) { /* 同上 */ } },
+  };
+  function hash(text) {
+    let x = 5381;
+    for (let i = 0; i < text.length; i++) x = ((x * 33) ^ text.charCodeAt(i)) >>> 0;
+    return x.toString(36);
+  }
+  const reviewKey = () => "findings-report-review-" + hash(state.raw);
+  const saveReview = () => store.set(reviewKey(), JSON.stringify(state.review));
+  const reviewOf = (id) => state.review[id] || { verdict: "未確認", note: "", picked: false };
+  function setReview(id, patch) {
+    state.review[id] = Object.assign({}, reviewOf(id), patch);
+    saveReview();
+  }
+  const pickedList = () => state.findings.filter((f) => reviewOf(f.id).picked);
+
+  function issuesOf(id) {
+    return {
+      errors: state.result.errors.filter((x) => x.id === id),
+      warnings: state.result.warnings.filter((x) => x.id === id),
+    };
+  }
+
+  function load(text, fileName) {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return renderDrop("JSONとして読めませんでした：" + e.message);
+    }
+    const result = checkFindings(data, SOURCES);
+    if (result.fatal) return renderDrop(result.fatal);
+    state.raw = text;
+    state.fileName = fileName;
+    state.result = result;
+    state.findings = data
+      .filter((f) => f && typeof f === "object" && !Array.isArray(f))
+      .map((f, i) => (typeof f.id === "string" ? f : Object.assign({}, f, { id: "(" + (i + 1) + "件目)" })))
+      .map(uniqueId())
+      .map((f, i) => ({ f, i }))
+      .sort((a, b) => ((SEV_RANK[a.f.severity] ?? 9) - (SEV_RANK[b.f.severity] ?? 9)) || a.i - b.i)
+      .map((x) => x.f);
+    try { state.review = JSON.parse(store.get(reviewKey()) || "{}") || {}; } catch (e) { state.review = {}; }
+    state.selected = state.findings.length ? state.findings[0].id : null;
+    Object.assign(state.filters, { classification: "", area: "", severity: "", verdict: "", q: "", pickedOnly: false });
+    state.fullFiles = {};
+    store.set(STORE_LAST, JSON.stringify({ text, fileName }));
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // id が重複していても別の指摘として選べるようにする。重複そのものはチェックで不合格になる。
+  function uniqueId() {
+    const seen = {};
+    return (f) => {
+      seen[f.id] = (seen[f.id] || 0) + 1;
+      return seen[f.id] === 1 ? f : Object.assign({}, f, { id: f.id + "（" + seen[f.id] + "件目）" });
+    };
+  }
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => load(String(reader.result), file.name);
+    reader.onerror = () => renderDrop("ファイルを読めませんでした。");
+    reader.readAsText(file);
+  }
+
+  function renderDrop(message) {
+    const input = h("input", { type: "file", accept: ".json,application/json", hidden: true,
+      on: { change: (e) => e.target.files[0] && readFile(e.target.files[0]) } });
+    const zone = h("div", { class: "drop" },
+      h("div", { class: "inner" },
+        h("h2", null, "findings.json をここにドロップ"),
+        h("p", { class: "hint" }, "/findings の結果は ", h("code", null, "findings/findings.json"), " にあります。ファイルはこのブラウザの中で読むだけで、外部には送信しません。"),
+        h("button", { class: "btn primary", type: "button", on: { click: () => input.click() } }, "ファイルを選ぶ"),
+        message && h("p", { class: "error-box", role: "alert" }, message),
+        input));
+    ["dragover", "dragenter"].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add("over"); }));
+    ["dragleave", "dragend"].forEach((ev) => zone.addEventListener(ev, () => zone.classList.remove("over")));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("over");
+      if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    });
+    app.replaceChildren(h("header", { class: "top" }, h("h1", null, "指摘レポート")), zone);
+  }
+
+  function matches(f) {
+    const flt = state.filters;
+    const rv = reviewOf(f.id);
+    if (flt.classification && f.classification !== flt.classification) return false;
+    if (flt.area && f.area !== flt.area) return false;
+    if (flt.severity && f.severity !== flt.severity) return false;
+    if (flt.verdict && rv.verdict !== flt.verdict) return false;
+    if (flt.pickedOnly && !rv.picked) return false;
+    if (flt.q) {
+      const hay = [f.id, f.title, f.evidence, f.migration_impact, f.code_ref, f.requirement_ref].join(" ").toLowerCase();
+      if (!hay.includes(flt.q.toLowerCase())) return false;
+    }
+    return true;
+  }
+
+  function render() {
+    const y = window.scrollY;
+    app.replaceChildren(
+      h("header", { class: "top" },
+        h("h1", null, "指摘レポート"),
+        h("span", { class: "file" }, state.fileName),
+        h("span", { class: "spacer" }),
+        h("button", { class: "btn", type: "button", on: { click: () => { store.del(STORE_LAST); renderDrop(); } } }, "別のファイルを読み込む")),
+      renderSummary(),
+      renderPicked(),
+      renderFilters(),
+      renderBody(),
+      h("footer", { class: "note" }, "判定とメモはこのブラウザの中にだけ保存します。"));
+    window.scrollTo(0, y);
+  }
+
+  function renderSummary() {
+    const dim = (key, label) => {
+      const counts = ENUMS[key].map((v) => state.findings.filter((f) => f[key] === v).length);
+      const max = Math.max(1, ...counts);
+      return h("section", null, h("h2", null, label),
+        ENUMS[key].map((v, i) => h("button", {
+          class: "bar-row", type: "button", title: v + "：" + counts[i] + "件。クリックで絞り込み",
+          "aria-pressed": String(state.filters[key] === v),
+          on: { click: () => { state.filters[key] = state.filters[key] === v ? "" : v; syncSelection(); render(); } },
+        },
+          h("span", { class: "bar-label" }, v),
+          h("span", { class: "bar-track" }, h("span", { class: "bar-fill", style: "display:block;width:" + (counts[i] / max * 100) + "%" + (counts[i] ? ";min-width:2px" : "") + (key === "classification" ? ";background:" + catColor(v) : "") })),
+          h("span", { class: "bar-count" }, counts[i]))));
+    };
+    return h("div", { class: "card summary" },
+      h("section", null, h("h2", null, "指摘の総数"), h("div", { class: "total" }, state.findings.length, h("span", { class: "total-unit" }, "件"))),
+      dim("classification", "分類"), dim("area", "領域"), dim("severity", "重大度"),
+      renderCheck());
+  }
+  function catColor(v) {
+    return { "誤り": "var(--cat-error)", "矛盾": "var(--cat-conflict)", "未定義": "var(--cat-undefined)" }[v];
+  }
+
+  function renderCheck() {
+    const r = state.result;
+    const cls = r.errors.length ? "bad" : r.warnings.length ? "warn" : "ok";
+    const text = r.errors.length ? "✕ 不合格 " + r.errors.length + "件" : "✓ 不合格なし";
+    return h("section", null, h("h2", null, "機械のチェック（AIを使わない）"),
+      h("div", { class: "check-state " + cls }, text, r.warnings.length ? h("span", { style: "font-weight:500" }, "／注意 " + r.warnings.length + "件") : null),
+      h("p", { class: "check-note" }, "形式と参照先の実在だけを確かめます。合格でも、指摘の内容が正しいとは限りません。"),
+      r.errors.length ? h("ul", { class: "check-list" }, r.errors.map((x) => h("li", null, x.id + "：" + x.message))) : null);
+  }
+
+  function renderPicked() {
+    const picked = pickedList();
+    return h("div", { class: "card picked" },
+      h("strong", null, "本当に重要な" + MAX_PICK + "件（" + picked.length + "/" + MAX_PICK + "）"),
+      h("div", { class: "chips" },
+        picked.length ? picked.map((f) => h("button", { class: "chip", type: "button", title: f.title,
+          on: { click: () => { state.selected = f.id; render(); } } }, f.id + " " + f.title))
+          : h("span", { class: "empty-note" }, "根拠を確かめて、詳細の画面から選びます。")),
+      h("button", { class: "btn", type: "button", disabled: !picked.length, on: { click: copyPicked } }, "共有用にコピー"));
+  }
+
+  function copyPicked(e) {
+    const body = pickedList().map((f, i) => {
+      const rv = reviewOf(f.id);
+      const lines = [(i + 1) + ". " + f.id + " " + f.title + "（" + [f.classification, f.area, f.severity].join("／") + "）", "   判定：" + rv.verdict];
+      if (rv.note.trim()) lines.push("   メモ：" + rv.note.trim().replace(/\n/g, " "));
+      return lines.join("\n");
+    }).join("\n");
+    const btn = e.currentTarget;
+    const done = (label) => { btn.textContent = label; setTimeout(() => { btn.textContent = "共有用にコピー"; }, 1600); };
+    const fallback = () => {
+      const area = h("textarea", { value: body, style: "position:fixed;opacity:0" });
+      document.body.append(area);
+      area.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      area.remove();
+      done(ok ? "コピーしました" : "コピーできませんでした");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(body).then(() => done("コピーしました"), fallback);
+    } else fallback();
+  }
+
+  function syncSelection() {
+    const visible = state.findings.filter(matches);
+    if (!visible.some((f) => f.id === state.selected)) state.selected = visible.length ? visible[0].id : null;
+  }
+
+  function renderFilters() {
+    const flt = state.filters;
+    const sel = (key, label, options) => h("label", null, label,
+      h("select", { on: { change: (e) => { flt[key] = e.target.value; syncSelection(); render(); } } },
+        h("option", { value: "", selected: !flt[key] }, "すべて"),
+        options.map((v) => h("option", { value: v, selected: flt[key] === v }, v))));
+    const visible = state.findings.filter(matches).length;
+    const search = h("input", { type: "search", placeholder: "題名や根拠を検索", value: flt.q, id: "search-box",
+      on: { input: (e) => {
+        flt.q = e.target.value;
+        syncSelection();
+        const pos = e.target.selectionStart;
+        render();
+        const box = document.getElementById("search-box");
+        box.focus();
+        box.setSelectionRange(pos, pos);
+      } } });
+    return h("div", { class: "filters" },
+      sel("classification", "分類", ENUMS.classification),
+      sel("area", "領域", ENUMS.area),
+      sel("severity", "重大度", ENUMS.severity),
+      sel("verdict", "判定", VERDICTS),
+      h("label", null, "検索", search),
+      h("label", { style: "display:flex;gap:6px;align-items:center;min-height:34px;color:var(--ink-2);font-size:13px" },
+        h("input", { type: "checkbox", checked: flt.pickedOnly, on: { change: (e) => { flt.pickedOnly = e.target.checked; syncSelection(); render(); } } }),
+        "選んだものだけ"),
+      h("span", { class: "count", role: "status" }, visible + " / " + state.findings.length + "件を表示"));
+  }
+
+  function renderBody() {
+    const visible = state.findings.filter(matches);
+    const current = visible.find((f) => f.id === state.selected);
+    return h("div", { class: "layout" },
+      h("nav", { class: "list", "aria-label": "指摘の一覧" },
+        visible.length ? visible.map(renderItem) : h("div", { class: "none" }, "条件に合う指摘はありません。")),
+      h("main", { class: "card detail" }, current ? renderDetail(current) : h("p", { class: "empty-note" }, "指摘を選ぶと、ここに根拠を表示します。")));
+  }
+
+  function renderItem(f) {
+    const rv = reviewOf(f.id);
+    const issues = issuesOf(f.id);
+    return h("button", { class: "item", type: "button", "aria-current": String(f.id === state.selected),
+      on: { click: () => { state.selected = f.id; render(); } } },
+      h("span", { class: "meta" },
+        h("span", null, f.id),
+        h("span", null, h("span", { class: "dot " + f.classification }), f.classification),
+        h("span", { class: "sev " + f.severity }, "重大度 " + f.severity),
+        rv.verdict !== "未確認" ? h("span", { class: "verdict-mark" }, rv.verdict) : null,
+        rv.picked ? h("span", { class: "tag-pick" }, "★選択") : null,
+        issues.errors.length ? h("span", { class: "tag-issue" }, "✕チェック") : null),
+      h("span", { class: "title" }, f.title));
+  }
+
+  function renderDetail(f) {
+    const rv = reviewOf(f.id);
+    const issues = issuesOf(f.id);
+    return [
+      h("div", { class: "meta" },
+        h("span", null, f.id),
+        h("span", null, h("span", { class: "dot " + f.classification }), f.classification),
+        h("span", null, f.area),
+        h("span", { class: "sev " + f.severity }, "重大度 " + f.severity)),
+      h("h2", { class: "title" }, f.title),
+      issues.errors.length ? h("div", { class: "issue-box" }, h("ul", null, issues.errors.map((x) => h("li", null, "不合格：" + x.message)))) : null,
+      issues.warnings.length ? h("div", { class: "issue-box w" }, h("ul", null, issues.warnings.map((x) => h("li", null, "注意：" + x.message)))) : null,
+      h("h3", null, "根拠（AIの説明）"),
+      h("p", { class: "body" }, f.evidence),
+      h("h3", null, "移行への影響"),
+      h("p", { class: "body" }, f.migration_impact),
+      h("h3", null, "外部の基準（出典と確認日）"),
+      f.external_basis ? h("p", { class: "body" }, f.external_basis) : h("p", { class: "external-none" }, "記載なし"),
+      h("div", { class: "compare" },
+        h("div", { class: "pane" }, h("h3", null, "要件定義書の該当箇所"), renderRequirement(f)),
+        h("div", { class: "pane" }, h("h3", null, "コードの該当行"), renderCode(f))),
+      renderReview(f, rv),
+    ];
+  }
+
+  function renderRequirement(f) {
+    if (typeof f.requirement_ref !== "string") return h("p", { class: "external-none" }, "参照なし");
+    const numbers = [...new Set(parseRequirementRef(f.requirement_ref).numbers)];
+    if (!numbers.length) return h("p", { class: "external-none" }, f.requirement_ref);
+    return numbers.map((n) => SECTIONS[n]
+      ? [h("div", { class: "ref-head" }, h("div", { class: "ref-name" }, REQUIREMENTS_PATH + " §" + n + "（" + SECTIONS[n].line + "行目）"), githubLink(REQUIREMENTS_PATH, SECTIONS[n].line, SECTIONS[n].end), vscodeLink(REQUIREMENTS_PATH, SECTIONS[n].line)),
+         h("pre", { class: "req-text", style: "font-family:inherit" }, SECTIONS[n].text)]
+      : h("p", { class: "error-box" }, "§" + n + " は要件定義書にありません"));
+  }
+
+  function renderCode(f) {
+    if (typeof f.code_ref !== "string") return h("p", { class: "external-none" }, "参照なし");
+    const byPath = new Map();
+    parseCodeRef(f.code_ref).forEach((ref) => {
+      if (!byPath.has(ref.path)) byPath.set(ref.path, []);
+      byPath.get(ref.path).push(ref);
+    });
+    return [...byPath.entries()].map(([path, refs]) => {
+      if (!(path in SOURCES)) return h("p", { class: "error-box" }, path + " は題材にありません");
+      const lines = SOURCES[path].replace(/\r?\n$/, "").split(/\r?\n/);
+      const hit = new Set();
+      refs.forEach((r) => { if (r.from) for (let n = r.from; n <= r.to; n++) hit.add(n); });
+      const key = f.id + "|" + path;
+      const full = !!state.fullFiles[key];
+      const show = new Set();
+      if (full) lines.forEach((_, i) => show.add(i + 1));
+      else hit.forEach((n) => { for (let k = n - CONTEXT; k <= n + CONTEXT; k++) if (k >= 1 && k <= lines.length) show.add(k); });
+      const rows = [];
+      let prev = 0;
+      [...show].sort((a, b) => a - b).forEach((n) => {
+        if (prev && n !== prev + 1) rows.push(h("tr", { class: "gap" }, h("td", { class: "n" }, "⋮"), h("td", null, "")));
+        rows.push(h("tr", { class: hit.has(n) ? "hit" : "" }, h("td", { class: "n" }, n), h("td", null, lines[n - 1])));
+        prev = n;
+      });
+      return [
+        h("div", { class: "ref-head" }, h("div", { class: "ref-name" }, path), githubLink(path, hit.size ? Math.min(...hit) : null, hit.size ? Math.max(...hit) : null), vscodeLink(path, hit.size ? Math.min(...hit) : null)),
+        rows.length ? h("div", { class: "code", tabIndex: 0 }, h("table", null, h("tbody", null, rows))) : null,
+        h("button", { class: "link-btn", type: "button", on: { click: () => { state.fullFiles[key] = !full; render(); } } }, full ? "該当行の周辺だけ表示" : "ファイル全体を表示（全" + lines.length + "行）"),
+      ];
+    });
+  }
+
+  function renderReview(f, rv) {
+    const canPick = rv.picked || pickedList().length < MAX_PICK;
+    return h("section", { class: "review" },
+      h("h3", null, "あなたの判断：この指摘は正しいと言えますか"),
+      h("div", { class: "seg", role: "radiogroup", "aria-label": "判定" },
+        VERDICTS.map((v) => h("label", null,
+          h("input", { type: "radio", name: "verdict", value: v, checked: rv.verdict === v,
+            on: { change: () => { setReview(f.id, { verdict: v }); render(); } } }), v))),
+      h("textarea", { placeholder: "確かめた内容、確認すべき相手、確認できなかったことなど", value: rv.note, "aria-label": "メモ",
+        on: { input: (e) => setReview(f.id, { note: e.target.value }) } }),
+      h("div", { class: "row" },
+        h("button", { class: rv.picked ? "btn" : "btn primary", type: "button", disabled: !canPick,
+          on: { click: () => { setReview(f.id, { picked: !rv.picked }); render(); } } },
+          rv.picked ? "重要な" + MAX_PICK + "件から外す" : "重要な" + MAX_PICK + "件に選ぶ"),
+        canPick ? null : h("span", { class: "empty-note" }, MAX_PICK + "件選択済みです。入れ替えるには、先に1件外してください。")));
+  }
+
+  // 再読み込みしても続きから見られるようにする
+  const last = store.get(STORE_LAST);
+  let restored = false;
+  if (last) {
+    try {
+      const saved = JSON.parse(last);
+      load(saved.text, saved.fileName);
+      restored = true;
+    } catch (e) { store.del(STORE_LAST); }
+  }
+  if (!restored) renderDrop();
+})();
+</script>
+</body>
+</html>
