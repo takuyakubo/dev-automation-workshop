@@ -23,10 +23,12 @@ COBOLを読めなくても大丈夫です。分からないところは Claude C
 ### 1. 取得する
 
 ```bash
-git clone <リポジトリのURL>
-cd <リポジトリのディレクトリ>
+git clone https://github.com/takuyakubo/dev-automation-workshop.git
+cd dev-automation-workshop
 git checkout start
 ```
+
+**内容は当日までに更新することがあります。** 前日以降に、いったんフォルダを削除して取得し直してください（上の3行をもう一度実行します）。
 
 ### 2. Claude Code の動作を確かめる
 
@@ -42,7 +44,7 @@ claude
 
 `report/index.html` をブラウザで開きます。「findings.json をここにドロップ」と表示されれば準備完了です。
 
-**費用と時間の目安：** 検出コマンドの実行1回につき、約4〜17分、定価換算で約1ドルかかりました（講師の環境で5回試した結果です）。実行する環境によって変わります。Claude Code の費用は各自の所属先の負担です。
+**費用と時間の目安：** 検出コマンドの実行1回につき、約3〜17分、APIの定価に換算して約1ドルかかりました（講師の環境で6回試した結果です）。実行する環境によって変わります。Claude Code の費用は各自の所属先の負担です。
 
 ## 当日の手順
 
