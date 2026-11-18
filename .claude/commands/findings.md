@@ -4,6 +4,13 @@ description: 要件定義書と既存コードから、移行前に確認すべ�
 
 このCOBOLシステムをJavaへ移行します。その前に、`docs/requirements.md` と `legacy/` を読み、問題点を洗い出してください。
 
+対象のファイルは次の6つです。すべて読んでください。
+
+- `docs/requirements.md`（移行要件定義書）
+- `legacy/DEPOSIT.cbl`、`legacy/INTEREST.cbl`（現行のCOBOLプログラム）
+- `legacy/COPYBOOK/ACCOUNT.cpy`（レコード定義）
+- `legacy/data/ACCOUNT.txt`、`legacy/data/TRANSACTION.txt`（サンプルデータ）
+
 結果は `findings/findings.json` にJSON配列で出力してください。各要素の形式は次のとおりです。
 
 ```json
@@ -29,7 +36,7 @@ description: 要件定義書と既存コードから、移行前に確認すべ�
 
 外部の基準を根拠にする場合は、`external_basis` に出典と確認日を書いてください。手元で確認していない知識に基づく場合は「未確認」と書いてください。
 
-この作業で使うツールは Read、Glob、Grep、Write だけです。Bash と Web 検索は使わないでください。休憩中に確認待ちで止まらないようにするためです。
+ファイルを読むときは Read を使ってください。ファイルの一覧や検索が必要なら、Glob と Grep、または `ls`、`find`、`grep` など読むだけのコマンドを使って構いません。ファイルを変更するコマンドと Web 検索は使わないでください。書き込むのは `findings/findings.json` だけです。休憩中に確認待ちで止まらないようにするためです。
 
 `area` は次の基準で選んでください。
 
